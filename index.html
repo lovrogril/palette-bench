@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Test three-color website palettes on a live mock site and app.">
+<title>Palette Bench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Familjen+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+[hidden] { display: none !important; }
+/* Layout: a workbench. Library rail on the left, role slots + live mock site on the right. */
+:root {
+  --bg: #F3F3F1;
+  --panel: #FFFFFF;
+  --fg: #17171A;
+  --muted: #6B6B72;
+  --line: #E2E2DE;
+  --hi: #1F4BFF;
+  --ok: #157F3B;
+  --warn: #B25E00;
+  --bad: #C42B1C;
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body: "Familjen Grotesk", "Helvetica Neue", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111114; --panel: #1A1A1F; --fg: #EDEDF0; --muted: #9A9AA3; --line: #2C2C33;
+    --hi: #7C95FF; --ok: #4CC27A; --warn: #F0A33C; --bad: #FF6B5E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111114; --panel: #1A1A1F; --fg: #EDEDF0; --muted: #9A9AA3; --line: #2C2C33;
+  --hi: #7C95FF; --ok: #4CC27A; --warn: #F0A33C; --bad: #FF6B5E; color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.5 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+
+.app {
+  display: grid; grid-template-columns: 340px minmax(0, 1fr);
+  height: 100%;
+}
+/* ---------- Library rail ---------- */
+.rail {
+  border-right: 1px solid var(--line); background: var(--panel);
+  display: flex; flex-direction: column; min-height: 0;
+}
+.rail-head {
+  padding-block: 18px 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+  border-bottom: 1px solid var(--line);
+  display: grid; gap: 10px;
+}
+.brand { display: flex; align-items: baseline; gap: 8px; }
+.brand h1 { font: 800 22px/1 var(--f-display); margin: 0; letter-spacing: -0.02em; }
+.brand span { font: 500 11px var(--f-mono); color: var(--muted); }
+.rule {
+  font-size: 12.5px; color: var(--muted); margin: 0; text-wrap: pretty;
+}
+.rule b { color: var(--fg); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--line); background: transparent; border-radius: 999px;
+  padding: 3px 10px; font-size: 12.5px; color: var(--muted);
+}
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--panel); border-color: var(--fg); }
+.list {
+  overflow-y: auto; min-height: 0; flex: 1;
+  padding-block: 12px 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+  display: grid; gap: 18px; align-content: start;
+}
+.group h2 {
+  font: 600 11px var(--f-mono); text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); margin: 0 0 8px;
+  display: flex; justify-content: space-between; gap: 8px;
+}
+.group h2 a { color: var(--muted); text-transform: none; letter-spacing: 0; }
+.cards { display: grid; gap: 8px; }
+.pal {
+  position: relative; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel); padding: 8px; display: grid; gap: 6px;
+  transition: border-color .15s;
+}
+.pal:hover { border-color: var(--muted); }
+.pal.active { border-color: var(--hi); box-shadow: 0 0 0 1px var(--hi); }
+.pal-load {
+  all: unset; cursor: pointer; display: grid; gap: 6px;
+}
+.pal-load:focus-visible { outline: 2px solid var(--hi); outline-offset: 4px; border-radius: 6px; }
+.strip { display: grid; grid-template-columns: 6fr 3fr 1.4fr; height: 34px; border-radius: 6px; overflow: hidden; }
+.strip i { display: block; }
+.pal-meta { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.pal-name { font-weight: 600; font-size: 13.5px; line-height: 1.2; }
+.pal-src { font: 400 10.5px var(--f-mono); color: var(--muted); }
+.dots { display: flex; gap: 4px; }
+.dot {
+  width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line);
+  padding: 0;
+}
+.dot:hover { transform: scale(1.12); }
+.fav {
+  border: 0; background: none; padding: 2px 4px; font-size: 15px; line-height: 1; color: var(--muted);
+}
+.fav[aria-pressed="true"] { color: var(--bad); }
+.empty { color: var(--muted); font-size: 13px; }
+
+/* ---------- Main ---------- */
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.bar {
+  display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center;
+  padding-block: 12px;
+  padding-left: 18px; padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.slots { display: flex; gap: 8px; flex-wrap: wrap; }
+.slot {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--line); border-radius: 10px; padding: 5px 10px 5px 5px;
+  background: var(--bg); cursor: pointer;
+}
+.slot.sel { border-color: var(--hi); box-shadow: 0 0 0 1px var(--hi); }
+.slot input[type="color"] {
+  width: 34px; height: 34px; border: 0; padding: 0; border-radius: 7px; background: none; cursor: pointer;
+}
+.slot input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.slot input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(128,128,128,.35); border-radius: 7px; }
+.slot-txt { display: grid; line-height: 1.15; }
+.slot-role { font: 600 10.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.slot-hex {
+  font: 500 13px var(--f-mono); width: 76px; border: 0; background: transparent; padding: 0;
+  text-transform: uppercase;
+}
+.actions { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.btn {
+  border: 1px solid var(--line); background: var(--bg); border-radius: 8px;
+  padding: 7px 11px; font-size: 13px; font-weight: 500;
+  display: inline-flex; gap: 6px; align-items: center;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--fg); color: var(--panel); border-color: var(--fg); }
+.sub {
+  display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+  padding-block: 8px; padding-left: 18px; padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--muted);
+}
+.tabs { display: flex; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+.tab { border: 0; background: transparent; padding: 4px 12px; border-radius: 6px; font-size: 12.5px; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.checks { display: flex; flex-wrap: wrap; gap: 6px; }
+.ck {
+  display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line);
+  border-radius: 999px; padding: 2px 9px 2px 4px; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ck b { font: 600 10px var(--f-mono); padding: 1px 6px; border-radius: 999px; color: #fff; }
+.ck b.ok { background: var(--ok); } .ck b.warn { background: var(--warn); } .ck b.bad { background: var(--bad); }
+.tip { margin-left: auto; }
+.stage { flex: 1; overflow: auto; min-height: 0; padding: 18px; padding-right: max(18px, env(safe-area-inset-right, 0px)); }
+.toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--fg); color: var(--panel); padding: 8px 14px; border-radius: 8px; font-size: 13px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.toast.show { opacity: 1; }
+
+/* ---------- Mock website (all colors come from --b/--s/--a set by JS) ---------- */
+.site {
+  --b: #0099FF; --s: #FDFDFE; --a: #FB2506;
+  --b-ink: #fff; --s-ink: #111; --a-ink: #fff; --b-mut: rgba(255,255,255,.7); --s-mut: rgba(0,0,0,.6);
+  --hl: var(--a);
+  background: var(--b); color: var(--b-ink);
+  border-radius: 14px; overflow: hidden; border: 1px solid var(--line);
+  font-family: var(--f-body); transition: background .3s, color .3s;
+  max-width: 1180px; margin: 0 auto; container-type: inline-size;
+}
+.site * { transition: background-color .3s, color .3s, border-color .3s; }
+.w { padding-inline: clamp(18px, 4vw, 56px); }
+.s-nav { display: flex; align-items: center; gap: 24px; padding-block: 18px; }
+.logo { font: 800 20px var(--f-display); letter-spacing: -0.03em; display: flex; align-items: center; gap: 8px; }
+.logo i { width: 18px; height: 18px; border-radius: 5px 5px 5px 50%; background: var(--a); display: block; }
+.s-links { display: flex; gap: 20px; font-size: 14px; color: var(--b-mut); margin-left: auto; }
+.s-btn {
+  border: 0; border-radius: 999px; padding: 11px 20px; font-weight: 600; font-size: 14.5px;
+  background: var(--a); color: var(--a-ink); white-space: nowrap;
+}
+.s-btn.ghost { background: transparent; color: var(--b-ink); box-shadow: inset 0 0 0 1.5px currentColor; }
+.s-btn.alt { background: var(--s); color: var(--s-ink); }
+.hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; padding-block: 40px 64px; }
+.pill {
+  display: inline-flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 500;
+  padding: 5px 12px 5px 6px; border-radius: 999px; background: color-mix(in srgb, var(--s) 16%, transparent);
+}
+.pill b { background: var(--a); color: var(--a-ink); border-radius: 999px; padding: 1px 8px; font-size: 11.5px; }
+.hero h2 {
+  font: 800 clamp(34px, 6.2cqw, 66px)/0.98 var(--f-display); letter-spacing: -0.035em;
+  margin: 18px 0 16px; text-wrap: balance;
+}
+.hero h2 em { font-style: normal; color: var(--hl); }
+.hero p { font-size: 17px; color: var(--b-mut); max-width: 44ch; margin: 0 0 26px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.proof { display: flex; gap: 22px; margin-top: 28px; font-size: 13px; color: var(--b-mut); flex-wrap: wrap; }
+.proof strong { display: block; font: 700 22px var(--f-display); color: var(--b-ink); }
+
+.appcard {
+  background: var(--s); color: var(--s-ink); border-radius: 18px; padding: 18px;
+  box-shadow: 0 30px 60px -30px rgba(0,0,0,.45);
+}
+.ac-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.ac-top h3 { font: 700 16px var(--f-display); margin: 0; }
+.ac-top span { font-size: 12px; color: var(--s-mut); }
+.cal { display: grid; grid-template-columns: 38px repeat(5, 1fr); gap: 6px; font-size: 11px; }
+.cal .h { color: var(--s-mut); text-align: center; padding-bottom: 2px; }
+.cal .t { color: var(--s-mut); font-family: var(--f-mono); font-size: 10px; padding-top: 3px; }
+.cal .c { height: 30px; border-radius: 6px; background: color-mix(in srgb, var(--s-ink) 6%, var(--s)); }
+.cal .c.on { background: color-mix(in srgb, var(--b) 85%, var(--s)); color: var(--b-ink); padding: 4px 6px; font-weight: 600; }
+.cal .c.hot { background: var(--a); color: var(--a-ink); padding: 4px 6px; font-weight: 600; }
+.ac-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12.5px; }
+.bar-mini { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--s-ink) 10%, var(--s)); width: 46%; overflow: hidden; }
+.bar-mini i { display: block; height: 100%; width: 72%; background: var(--a); }
+
+.logos { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px 28px; padding-block: 22px; border-top: 1px solid color-mix(in srgb, var(--b-ink) 14%, transparent); color: var(--b-mut); font: 700 17px var(--f-display); letter-spacing: -0.02em; }
+
+.features { padding-block: 64px; }
+.sec-k { font: 500 12px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--hl); }
+.sec-h { font: 800 clamp(28px, 3.6vw, 42px)/1.05 var(--f-display); letter-spacing: -0.03em; margin: 10px 0 30px; max-width: 20ch; text-wrap: balance; }
+.fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.feat {
+  border-radius: 16px; padding: 22px;
+  background: color-mix(in srgb, var(--s) 12%, var(--b));
+  border: 1px solid color-mix(in srgb, var(--b-ink) 10%, transparent);
+}
+.feat .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--s); color: var(--s-ink); display: grid; place-items: center; font: 700 15px var(--f-mono); margin-bottom: 14px; }
+.feat:nth-child(2) .ic { background: var(--a); color: var(--a-ink); }
+.feat h4 { font: 700 18px var(--f-display); margin: 0 0 6px; }
+.feat p { margin: 0; font-size: 14.5px; color: var(--b-mut); }
+
+.band { background: var(--s); color: var(--s-ink); padding-block: 64px; }
+.band-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; align-items: center; }
+.band blockquote { margin: 0; font: 600 clamp(22px, 2.6vw, 32px)/1.2 var(--f-display); letter-spacing: -0.02em; text-wrap: balance; }
+.band cite { display: block; margin-top: 16px; font: 400 14px var(--f-body); color: var(--s-mut); font-style: normal; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.stat { border-top: 2px solid var(--s-ink); padding-top: 10px; }
+.stat:first-child { border-color: var(--a); }
+.stat strong { font: 800 34px var(--f-display); letter-spacing: -0.03em; display: block; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--s-mut); }
+
+.pricing { padding-block: 64px; }
+.pgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.plan {
+  border-radius: 18px; padding: 24px; display: grid; gap: 12px; align-content: start;
+  border: 1px solid color-mix(in srgb, var(--b-ink) 16%, transparent);
+}
+.plan.pick { background: var(--s); color: var(--s-ink); border-color: var(--a); box-shadow: 0 0 0 2px var(--a); }
+.plan h4 { margin: 0; font: 700 17px var(--f-display); display: flex; justify-content: space-between; align-items: center; }
+.plan h4 b { font: 600 11px var(--f-body); background: var(--a); color: var(--a-ink); padding: 3px 9px; border-radius: 999px; }
+.price { font: 800 40px/1 var(--f-display); letter-spacing: -0.03em; }
+.price small { font: 400 14px var(--f-body); opacity: .65; }
+.plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 14px; }
+.plan li::before { content: "✓"; color: var(--hl); font-weight: 700; margin-right: 8px; }
+.plan.pick li::before { color: var(--a-on-s, var(--a)); }
+.plan .s-btn { justify-self: start; margin-top: 6px; }
+.plan:not(.pick) .s-btn { background: transparent; color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
+
+.cta { background: var(--a); color: var(--a-ink); border-radius: 22px; padding: 44px clamp(22px, 4vw, 48px); display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; }
+.cta h3 { margin: 0; font: 800 clamp(26px, 3.4vw, 40px)/1.05 var(--f-display); letter-spacing: -0.03em; max-width: 16ch; }
+.cta .s-btn { background: var(--a-ink); color: var(--a); }
+.foot { padding-block: 36px 30px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; color: var(--b-mut); font-size: 13px; }
+
+/* ---------- Mock app ---------- */
+.phones { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; padding-block: 8px 24px; }
+.phone {
+  width: 300px; max-width: 100%; aspect-ratio: 300 / 620; border-radius: 42px; padding: 10px;
+  background: #0d0d10; box-shadow: 0 30px 60px -25px rgba(0,0,0,.5);
+}
+.scr { height: 100%; border-radius: 33px; overflow: hidden; display: flex; flex-direction: column; position: relative; font-family: var(--f-body); }
+.scr * { transition: background-color .3s, color .3s; }
+.notch { height: 30px; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font: 600 12px var(--f-body); flex: none; }
+.notch i { width: 80px; height: 22px; border-radius: 12px; background: #0d0d10; display: block; }
+.p1 { background: var(--b); color: var(--b-ink); }
+.p-body { flex: 1; overflow: hidden; padding: 6px 18px; display: grid; gap: 14px; align-content: start; }
+.p-hi { font-size: 13px; color: var(--b-mut); }
+.p-h { font: 800 26px/1.05 var(--f-display); letter-spacing: -0.03em; margin: 2px 0 0; }
+.p-card { background: var(--s); color: var(--s-ink); border-radius: 20px; padding: 16px; display: grid; gap: 8px; }
+.p-card small { color: var(--s-mut); font-size: 12px; }
+.p-card strong { font: 800 30px var(--f-display); letter-spacing: -0.03em; }
+.p-prog { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--s-ink) 10%, var(--s)); overflow: hidden; }
+.p-prog i { display: block; height: 100%; width: 64%; background: var(--a); border-radius: 4px; }
+.p-list { display: grid; gap: 8px; }
+.p-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: color-mix(in srgb, var(--s) 12%, var(--b)); font-size: 13.5px; }
+.p-item i { width: 32px; height: 32px; border-radius: 10px; background: var(--s); flex: none; }
+.p-item:first-child i { background: var(--a); }
+.p-item span { flex: 1; }
+.p-item em { font-style: normal; color: var(--b-mut); font-size: 12px; }
+.p-tab { display: flex; justify-content: space-around; padding: 12px 10px 18px; border-top: 1px solid color-mix(in srgb, var(--b-ink) 12%, transparent); font-size: 11px; color: var(--b-mut); flex: none; }
+.p-tab span.on { color: var(--hl); font-weight: 600; }
+.fab { position: absolute; right: 18px; bottom: 74px; width: 54px; height: 54px; border-radius: 18px; background: var(--a); color: var(--a-ink); display: grid; place-items: center; font: 400 28px/1 var(--f-body); box-shadow: 0 10px 24px -8px rgba(0,0,0,.4); }
+.p2 { background: var(--s); color: var(--s-ink); }
+.p2 .p-hi { color: var(--s-mut); }
+.p2-hero { background: var(--b); color: var(--b-ink); border-radius: 24px; padding: 18px; display: grid; gap: 10px; }
+.p2-hero .s-btn { justify-self: start; padding: 8px 16px; font-size: 13px; }
+.chipset { display: flex; gap: 6px; flex-wrap: wrap; }
+.chipset span { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--s-ink) 20%, transparent); }
+.chipset span.on { background: var(--s-ink); color: var(--s); border-color: var(--s-ink); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { border-radius: 16px; padding: 12px; min-height: 92px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12.5px; background: color-mix(in srgb, var(--b) 10%, var(--s)); }
+.tile b { font: 700 18px var(--f-display); }
+.tile.acc { background: var(--a); color: var(--a-ink); }
+
+/* ---------- Responsive ---------- */
+@container (max-width: 860px) {
+  .hero, .band-grid { grid-template-columns: 1fr; }
+  .fgrid, .pgrid { grid-template-columns: 1fr; }
+  .s-links { display: none; }
+}
+@container (max-width: 480px) { .s-nav .s-btn { display: none; } }
+@media (max-width: 760px) {
+  html, body { height: auto; }
+  .app { grid-template-columns: 1fr; height: auto; }
+  .rail { border-right: 0; border-bottom: 1px solid var(--line); }
+  .list { max-height: 360px; }
+  .bar, .sub { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  .stage { padding: 12px max(12px, env(safe-area-inset-right, 0px)) 12px max(12px, env(safe-area-inset-left, 0px)); overflow: visible; }
+  .actions { margin-left: 0; }
+  .tip { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail-head">
+      <div class="brand"><h1>Palette Bench</h1><span id="count"></span></div>
+      <p class="rule"><b>Two quiet colors, one loud one.</b> Base fills about 60% of the screen, Secondary about 30%, and the Accent about 10%: buttons, highlights, the thing you want clicked.</p>
+      <div class="chips" id="filters" role="group" aria-label="Filter palettes"></div>
+    </div>
+    <div class="list" id="list"></div>
+  </aside>
+
+  <main class="main">
+    <div class="bar">
+      <div class="slots" id="slots"></div>
+      <div class="actions">
+        <button class="btn" id="swap" title="Swap Base and Secondary (S)">⇄ Swap base</button>
+        <button class="btn" id="rotate" title="Cycle which color plays which role (R)">↻ Rotate roles</button>
+        <button class="btn" id="mix" title="Random mix from all palettes (M)">⚄ Random mix</button>
+        <button class="btn" id="save">♡ Save</button>
+        <button class="btn primary" id="copy">Copy CSS</button>
+      </div>
+    </div>
+    <div class="sub">
+      <div class="tabs" role="tablist" aria-label="Preview">
+        <button class="tab" role="tab" id="tab-web" aria-selected="true">Website</button>
+        <button class="tab" role="tab" id="tab-app" aria-selected="false">Mobile app</button>
+      </div>
+      <div class="checks" id="checks" aria-label="Contrast checks"></div>
+      <span class="tip">← → browse · click a single dot to drop it into the selected slot</span>
+    </div>
+
+    <div class="stage">
+      <section class="site" id="web" aria-label="Website preview">
+        <div class="w">
+          <nav class="s-nav">
+            <div class="logo"><i></i>Tidepool</div>
+            <div class="s-links"><span>Product</span><span>Studios</span><span>Pricing</span><span>Changelog</span></div>
+            <button class="s-btn">Start free</button>
+          </nav>
+          <div class="hero">
+            <div>
+              <span class="pill"><b>New</b> Waitlists that fill themselves</span>
+              <h2>Bookings for small studios, <em>without the back-and-forth.</em></h2>
+              <p>Tidepool handles classes, deposits and reminders so your front desk can stop answering the same three messages all day.</p>
+              <div class="row">
+                <button class="s-btn">Start a 14-day trial</button>
+                <button class="s-btn ghost">Watch the 2-min tour</button>
+              </div>
+              <div class="proof">
+                <div><strong>4,200+</strong>studios</div>
+                <div><strong>−38%</strong>no-shows</div>
+                <div><strong>4.9 / 5</strong>on 1,100 reviews</div>
+              </div>
+            </div>
+            <div class="appcard" aria-hidden="true">
+              <div class="ac-top"><h3>This week</h3><span>Nov 3 – 7</span></div>
+              <div class="cal">
+                <span></span><span class="h">Mon</span><span class="h">Tue</span><span class="h">Wed</span><span class="h">Thu</span><span class="h">Fri</span>
+                <span class="t">07:00</span><span class="c on">Flow</span><span class="c"></span><span class="c on">Flow</span><span class="c"></span><span class="c on">Flow</span>
+                <span class="t">09:30</span><span class="c"></span><span class="c hot">Reformer</span><span class="c"></span><span class="c on">Barre</span><span class="c"></span>
+                <span class="t">12:00</span><span class="c on">Barre</span><span class="c"></span><span class="c"></span><span class="c hot">Reformer</span><span class="c on">Yin</span>
+                <span class="t">18:00</span><span class="c"></span><span class="c on">Power</span><span class="c on">Power</span><span class="c"></span><span class="c"></span>
+              </div>
+              <div class="ac-foot"><span>Capacity 72%</span><div class="bar-mini"><i></i></div></div>
+            </div>
+          </div>
+          <div class="logos"><span>Kinfolk Yoga</span><span>Northside Pilates</span><span>Ember Barre</span><span>Ritual Rooms</span><span>Kiln & Co.</span></div>
+        </div>
+
+        <div class="features w">
+          <div class="sec-k">Why studios switch</div>
+          <h3 class="sec-h">Everything the front desk used to do by hand</h3>
+          <div class="fgrid">
+            <div class="feat"><div class="ic">01</div><h4>Smart waitlists</h4><p>When someone cancels, the next person gets the spot and a text. No one has to check.</p></div>
+            <div class="feat"><div class="ic">02</div><h4>Deposits that stick</h4><p>Take a card on booking and charge late-cancel fees automatically, by your rules.</p></div>
+            <div class="feat"><div class="ic">03</div><h4>Reminders people read</h4><p>SMS 2 hours before class, with a one-tap "I'm not coming" that frees the spot.</p></div>
+          </div>
+        </div>
+
+        <div class="band">
+          <div class="w band-grid">
+            <blockquote>“We stopped losing Saturday classes to no-shows the first month. The waitlist alone paid for the year.”<cite>Maya Lindqvist, owner of Ember Barre</cite></blockquote>
+            <div class="stats">
+              <div class="stat"><strong>12 h</strong><span>saved per week, per desk</span></div>
+              <div class="stat"><strong>96%</strong><span>class fill rate</span></div>
+              <div class="stat"><strong>3 min</strong><span>average setup per class</span></div>
+              <div class="stat"><strong>0</strong><span>double bookings since launch</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pricing w">
+          <div class="sec-k">Pricing</div>
+          <h3 class="sec-h">Pay for the studio, not per seat</h3>
+          <div class="pgrid">
+            <div class="plan"><h4>Solo</h4><div class="price">€19<small> /mo</small></div><ul><li>1 location</li><li>Unlimited classes</li><li>Email reminders</li></ul><button class="s-btn">Choose Solo</button></div>
+            <div class="plan pick"><h4>Studio <b>Most popular</b></h4><div class="price">€49<small> /mo</small></div><ul><li>Up to 3 locations</li><li>Smart waitlists + SMS</li><li>Deposits & late fees</li></ul><button class="s-btn">Choose Studio</button></div>
+            <div class="plan"><h4>Collective</h4><div class="price">€129<small> /mo</small></div><ul><li>Unlimited locations</li><li>Instructor payroll</li><li>Priority support</li></ul><button class="s-btn">Talk to us</button></div>
+          </div>
+        </div>
+
+        <div class="w">
+          <div class="cta"><h3>Your next class could fill itself.</h3><button class="s-btn">Start free, no card</button></div>
+          <footer class="foot"><span>© 2026 Tidepool Labs</span><span>Privacy · Terms · Status</span></footer>
+        </div>
+      </section>
+
+      <section class="phones" id="app" hidden aria-label="Mobile app preview">
+        <div class="phone"><div class="scr p1">
+          <div class="notch"><span>9:41</span><i></i><span>●●●</span></div>
+          <div class="p-body">
+            <div><div class="p-hi">Good morning, Sam</div><div class="p-h">Today's bookings</div></div>
+            <div class="p-card"><small>Classes filled this week</small><strong>86%</strong><div class="p-prog"><i></i></div><small>14 of 16 classes above 80%</small></div>
+            <div class="p-list">
+              <div class="p-item"><i></i><span>Reformer · 09:30</span><em>12/12</em></div>
+              <div class="p-item"><i></i><span>Barre · 12:00</span><em>9/14</em></div>
+              <div class="p-item"><i></i><span>Power Flow · 18:00</span><em>15/20</em></div>
+            </div>
+          </div>
+          <div class="fab">+</div>
+          <div class="p-tab"><span class="on">Today</span><span>Schedule</span><span>Clients</span><span>Settings</span></div>
+        </div></div>
+        <div class="phone"><div class="scr p2">
+          <div class="notch"><span>9:41</span><i></i><span>●●●</span></div>
+          <div class="p-body">
+            <div class="p-hi">Explore</div>
+            <div class="p2-hero"><div class="p-h">Try a reformer class this week</div><button class="s-btn">Book a spot</button></div>
+            <div class="chipset"><span class="on">All</span><span>Yoga</span><span>Pilates</span><span>Barre</span></div>
+            <div class="tiles">
+              <div class="tile acc">Streak<b>7 days</b></div>
+              <div class="tile">Credits<b>11</b></div>
+              <div class="tile">Next<b>Thu 09:30</b></div>
+              <div class="tile">Friends<b>3 going</b></div>
+            </div>
+          </div>
+        </div></div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// Roles in every palette: [base, secondary, accent]
+const NIKI = "https://www.instagram.com/niki.aroca/reel/";
+const PALETTES = [
+  // --- Niki Aroca: hex sampled from the swatch cards in his reels ---
+  { id:"n-sky", group:"niki", reel:"DfQKpXNoQwW", name:"Sky / Cloud / Amber", c:[["Sky Blue","#0099FF"],["Cloudy White","#FDFDFE"],["Amber Red","#FB2506"]] },
+  { id:"n-punk", group:"niki", reel:"DfQKpXNoQwW", name:"Red Orange / Yellow Punk", c:[["Red Orange","#F42902"],["Snowy White","#FDFDFF"],["Yellow Punk","#CCFB01"]] },
+  { id:"n-sapphire", group:"niki", reel:"DfQKpXNoQwW", name:"Sapphire / Ocean / Jade", c:[["Sapphire Blue","#0042AC"],["Ocean Blue","#00CFFE"],["Neon Jade","#83FD80"]] },
+  { id:"n-mandarin", group:"niki", reel:"DfKxflroHj3", name:"Mandarin / Forest / Crest", c:[["Mandarin Orange","#FD550A"],["Forest Green","#015D47"],["Crest Yellow","#E0F354"]] },
+  { id:"n-onyx", group:"niki", reel:"DfKxflroHj3", name:"Onyx / Indigo / Mint", c:[["Onyx Black","#01010D"],["Electric Indigo","#6331FB"],["Tropical Mint","#88F9C0"]] },
+  { id:"n-seal", group:"niki", reel:"DfKxflroHj3", name:"Seal / Navy / Crimson", c:[["Seal Blue","#DBF2FC"],["Navy Blue","#072D59"],["Crimson Pink","#FD6E88"]] },
+  { id:"n-charcoal", group:"niki", reel:"DfIaULMIRC-", name:"Charcoal / Royal / Tangerine", c:[["Charcoal Black","#22222F"],["Royal Blue","#105CFF"],["Tangerine Orange","#FE8500"]] },
+  { id:"n-marsh", group:"niki", reel:"DfIaULMIRC-", name:"Marshmallow / Violet / Bubblegum", c:[["Marshmallow White","#F0F0F0"],["Galactic Violet","#573EFF"],["Bubblegum Pink","#FF6AD3"]] },
+  { id:"n-abyss", group:"niki", reel:"DfIaULMIRC-", name:"Abyss / Aqua Jade / Baby Pink", c:[["Midnight Abyss","#171F44"],["Aqua Jade","#74FFED"],["Baby Pink","#FE81D1"]] },
+  { id:"n-hotpink", group:"niki", reel:"DfGEE7DIvjU", name:"Sky / White / Hot Pink", c:[["Sky Blue","#0593C6"],["White","#FCFFFF"],["Hot Pink","#D83995"]] },
+  { id:"n-cantaloupe", group:"niki", reel:"DfGEE7DIvjU", name:"Midnight / Electric / Cantaloupe", c:[["Midnight Black","#04060C"],["Electric Blue","#0397DE"],["Cantaloupe Orange","#FC704D"]] },
+  { id:"n-deep", group:"niki", reel:"DfGEE7DIvjU", name:"Deep Blue / White / Bubblegum", c:[["Deep Blue","#0B2F8F"],["Pure White","#FFFFFF"],["Bubblegum Pink","#FD91CC"]] },
+
+  // --- Web picks: Hook Agency's 2026 scheme list, reordered into base / secondary / accent ---
+  { id:"w-darkhorse", group:"web", src:"Hook Agency", name:"Dark Horse", c:[["Ink","#1D1E22"],["Slate","#393F4D"],["Marigold","#FEDA6A"]] },
+  { id:"w-minty", group:"web", src:"Hook Agency", name:"Minty Refreshed", c:[["Midnight","#201D3A"],["Fog","#F5F5F5"],["Mint","#4CB69F"]] },
+  { id:"w-khaki", group:"web", src:"Hook Agency", name:"Clean Khaki Red", c:[["Khaki","#E6DBC9"],["Moss Ink","#2E3830"],["Brick","#C53211"]] },
+  { id:"w-punch", group:"web", src:"Hook Agency", name:"Dark With a Punch", c:[["Graphite","#2B2B2B"],["Bone","#ECE8E1"],["Blaze","#FF5A09"]] },
+  { id:"w-warm", group:"web", src:"Hook Agency", name:"Warm Approachable", c:[["Deep Teal","#00303F"],["Seafoam","#CAE4DB"],["Mustard","#DCAE1D"]] },
+  { id:"w-rethink", group:"web", src:"Hook Agency", name:"Rethink", c:[["Ice","#E8F9FD"],["Leaf","#59CE8F"],["Signal Red","#FF1E00"]] },
+  { id:"w-earthy", group:"web", src:"Hook Agency", name:"Earthy Modern", c:[["Sage Mist","#DAEFD9"],["Lichen","#608074"],["Vermilion","#DE493C"]] },
+  { id:"w-intellect", group:"web", src:"Hook Agency", name:"Intellectual Nonchalance", c:[["Cloud","#E1E8F0"],["Amethyst","#9068BE"],["Cherry","#E62739"]] },
+  { id:"w-fresh", group:"web", src:"Hook Agency", name:"Fresh Modern", c:[["Night Violet","#1D1145"],["Blush","#F2A1A1"],["Lagoon","#0DB4B9"]] },
+  { id:"w-goldifox", group:"web", src:"Hook Agency", name:"Goldifox", c:[["Espresso","#252523"],["Linen","#DFD8C8"],["Brass","#A39274"]] },
+  // --- Web picks: widely used product-UI pairings ---
+  { id:"w-slate-teal", group:"web", src:"SaaS classic", name:"Slate & Teal", c:[["Paper","#F8FAFC"],["Slate 900","#0F172A"],["Teal","#14B8A6"]] },
+  { id:"w-midnight-coral", group:"web", src:"Dark-mode classic", name:"Midnight Coral", c:[["Midnight","#0F172A"],["Slate 800","#1E293B"],["Coral","#FB7185"]] },
+  { id:"w-lavender", group:"web", src:"SaaS classic", name:"Lavender Ink", c:[["Lavender Mist","#F5F3FF"],["Deep Plum","#2E1065"],["Violet","#8B5CF6"]] },
+  { id:"w-forest-mustard", group:"web", src:"Editorial", name:"Forest & Mustard", c:[["Forest","#0F2A1F"],["Oat","#F1EAD8"],["Mustard","#E9B949"]] },
+  { id:"w-paper-cobalt", group:"web", src:"Swiss classic", name:"Paper & Cobalt", c:[["Paper","#FAFAF7"],["Ink","#111111"],["Cobalt","#1F3BFF"]] },
+  { id:"w-sand-clay", group:"web", src:"Lifestyle", name:"Sand & Clay", c:[["Sand","#EFE7DA"],["Olive","#3F4A3C"],["Clay","#C8643B"]] },
+  { id:"w-graphite-lime", group:"web", src:"Dev tools", name:"Graphite Lime", c:[["Graphite","#0E0F11"],["Steel","#2A2D33"],["Lime","#C6F432"]] },
+  { id:"w-fintech", group:"web", src:"Fintech", name:"Trust Blue", c:[["White","#FFFFFF"],["Navy","#0A2540"],["Iris","#635BFF"]] },
+];
+
+const ROLES = ["Base · 60%", "Secondary · 30%", "Accent · 10%"];
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+
+let saved = store.get("pb-saved", []);          // [{name, c:[[n,hex]x3]}]
+let filter = store.get("pb-filter", "all");
+let state = { name: "", id: null, c: PALETTES[0].c.map(x => [...x]) };
+let activeSlot = 2;
+
+// ---------- color math ----------
+const hexToRgb = h => { h = h.replace("#",""); if (h.length === 3) h = [...h].map(x => x + x).join(""); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const lum = h => { const [r,g,b] = hexToRgb(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126*r + 0.7152*g + 0.0722*b; };
+const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+const DARK = "#0E0E12", LIGHT = "#FFFFFF";
+const ink = h => contrast(h, DARK) >= contrast(h, LIGHT) ? DARK : LIGHT;
+const mut = h => ink(h) === LIGHT ? "rgba(255,255,255,.72)" : "rgba(14,14,18,.64)";
+const isDark = h => lum(h) < 0.18;
+const validHex = h => /^#?[0-9a-f]{6}$/i.test(h);
+const norm = h => ("#" + h.replace("#","")).toUpperCase();
+
+// ---------- render library ----------
+const FILTERS = [["all","All"],["niki","Niki Aroca"],["web","Web picks"],["dark","Dark base"],["light","Light base"],["saved","Saved"]];
+function renderFilters() {
+  $("#filters").innerHTML = FILTERS.map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${l}${k === "saved" && saved.length ? " · " + saved.length : ""}</button>`).join("");
+}
+function card(p) {
+  const key = p.c.map(x => x[1]).join("");
+  const isSaved = saved.some(s => s.c.map(x => x[1]).join("") === key);
+  const src = p.group === "niki" ? `<a class="pal-src" href="${NIKI + p.reel}/" target="_blank" rel="noopener">reel ↗</a>` : `<span class="pal-src">${p.src || "Saved mix"}</span>`;
+  return `<div class="pal${state.id === p.id ? " active" : ""}" data-id="${p.id}">
+    <button class="pal-load" data-load="${p.id}" aria-label="Load ${p.name}">
+      <div class="strip">${p.c.map(x => `<i style="background:${x[1]}"></i>`).join("")}</div>
+    </button>
+    <div class="pal-meta">
+      <div><div class="pal-name">${p.name}</div>${src}</div>
+      <div class="dots">${p.c.map(x => `<button class="dot" style="background:${x[1]}" data-hex="${x[1]}" data-cname="${x[0]}" title="${x[0]} ${x[1]} → selected slot" aria-label="Use ${x[0]} ${x[1]} in selected slot"></button>`).join("")}
+        <button class="fav" data-fav="${p.id}" aria-pressed="${isSaved}" title="${isSaved ? "Remove from saved" : "Save"}">${isSaved ? "♥" : "♡"}</button></div>
+    </div>
+  </div>`;
+}
+function visible() {
+  const all = [...PALETTES, ...saved];
+  return all.filter(p => {
+    if (filter === "niki") return p.group === "niki";
+    if (filter === "web") return p.group === "web";
+    if (filter === "saved") return p.group === "saved";
+    if (filter === "dark") return isDark(p.c[0][1]);
+    if (filter === "light") return !isDark(p.c[0][1]);
+    return true;
+  });
+}
+function renderList() {
+  const v = visible();
+  const groups = [
+    ["niki", `From @niki.aroca <a href="https://www.instagram.com/niki.aroca/reels/" target="_blank" rel="noopener">profile ↗</a>`],
+    ["web", "Web picks"],
+    ["saved", "Your saved mixes"],
+  ];
+  const html = groups.map(([g, label]) => {
+    const items = v.filter(p => p.group === g);
+    return items.length ? `<section class="group"><h2><span>${label.split(" <")[0]}</span>${label.includes("<a") ? "<" + label.split(" <")[1] : ""}</h2><div class="cards">${items.map(card).join("")}</div></section>` : "";
+  }).join("");
+  $("#list").innerHTML = html || `<p class="empty">Nothing saved yet. Build a mix you like and press ♡ Save.</p>`;
+  $("#count").textContent = `${PALETTES.length + saved.length} palettes`;
+}
+
+// ---------- slots ----------
+function renderSlots() {
+  $("#slots").innerHTML = state.c.map(([n, h], i) => `
+    <label class="slot${i === activeSlot ? " sel" : ""}" data-slot="${i}" for="pick-${i}">
+      <input type="color" id="pick-${i}" value="${h.toLowerCase()}" data-i="${i}" aria-label="${ROLES[i]} color">
+      <span class="slot-txt"><span class="slot-role">${ROLES[i]}</span>
+      <input class="slot-hex" id="hex-${i}" value="${h}" data-i="${i}" maxlength="7" spellcheck="false" aria-label="${ROLES[i]} hex"></span>
+    </label>`).join("");
+}
+
+// ---------- apply ----------
+function apply() {
+  const [b, s, a] = state.c.map(x => x[1]);
+  const roots = [$("#web"), ...document.querySelectorAll(".scr")];
+  // accent used as text on base only when it reads; else fall back to base ink
+  const hl = contrast(a, b) >= 3 ? a : (contrast(s, b) >= 3 ? s : ink(b));
+  const aOnS = contrast(a, s) >= 2.2 ? a : ink(s);
+  for (const r of roots) {
+    r.style.setProperty("--b", b); r.style.setProperty("--s", s); r.style.setProperty("--a", a);
+    r.style.setProperty("--b-ink", ink(b)); r.style.setProperty("--s-ink", ink(s)); r.style.setProperty("--a-ink", ink(a));
+    r.style.setProperty("--b-mut", mut(b)); r.style.setProperty("--s-mut", mut(s));
+    r.style.setProperty("--hl", hl); r.style.setProperty("--a-on-s", aOnS);
+  }
+  const checks = [
+    ["Text on base", contrast(ink(b), b), 4.5],
+    ["Text on secondary", contrast(ink(s), s), 4.5],
+    ["Button label", contrast(ink(a), a), 4.5],
+    ["Accent vs base", contrast(a, b), 3],
+  ];
+  $("#checks").innerHTML = checks.map(([l, r, need]) => {
+    const cls = r >= need ? "ok" : r >= need * 0.66 ? "warn" : "bad";
+    const tag = r >= need ? (need === 3 ? "POPS" : "AA") : need === 3 ? "WEAK" : "LOW";
+    return `<span class="ck" title="WCAG target ${need}:1"><b class="${cls}">${tag}</b>${l} ${r.toFixed(1)}:1</span>`;
+  }).join("");
+  try { history.replaceState(null, "", "#" + state.c.map(x => x[1].slice(1)).join("-")); } catch {}
+}
+function load(p) {
+  state = { name: p.name, id: p.id, c: p.c.map(x => [...x]) };
+  renderSlots(); apply(); renderList();
+  const el = document.querySelector(`.pal[data-id="${p.id}"]`);
+  el && el.scrollIntoView({ block: "nearest" });
+}
+function setColor(i, hex, name) {
+  state.c[i] = [name || "Custom", norm(hex)];
+  state.id = null; state.name = "Custom mix";
+  renderSlots(); apply(); renderList();
+}
+
+// ---------- events ----------
+$("#filters").addEventListener("click", e => {
+  const f = e.target.closest("[data-f]"); if (!f) return;
+  filter = f.dataset.f; store.set("pb-filter", filter); renderFilters(); renderList();
+});
+$("#list").addEventListener("click", e => {
+  const all = [...PALETTES, ...saved];
+  const ld = e.target.closest("[data-load]");
+  if (ld) return load(all.find(p => p.id === ld.dataset.load));
+  const dot = e.target.closest("[data-hex]");
+  if (dot) return setColor(activeSlot, dot.dataset.hex, dot.dataset.cname);
+  const fav = e.target.closest("[data-fav]");
+  if (fav) {
+    const p = all.find(x => x.id === fav.dataset.fav);
+    const key = p.c.map(x => x[1]).join("");
+    const idx = saved.findIndex(s => s.c.map(x => x[1]).join("") === key);
+    if (idx >= 0) { saved.splice(idx, 1); toast("Removed from saved"); }
+    else { saved.push({ id: "s-" + Date.now(), group: "saved", name: p.name, c: p.c.map(x => [...x]) }); toast("Saved"); }
+    store.set("pb-saved", saved); renderFilters(); renderList();
+  }
+});
+$("#slots").addEventListener("click", e => {
+  const s = e.target.closest("[data-slot]"); if (!s) return;
+  activeSlot = +s.dataset.slot;
+  document.querySelectorAll(".slot").forEach(x => x.classList.toggle("sel", +x.dataset.slot === activeSlot));
+});
+$("#slots").addEventListener("input", e => {
+  const i = +e.target.dataset.i;
+  if (e.target.type === "color") {
+    state.c[i] = ["Custom", norm(e.target.value)]; state.id = null;
+    $("#hex-" + i).value = norm(e.target.value); apply();
+  } else if (validHex(e.target.value)) {
+    state.c[i] = ["Custom", norm(e.target.value)]; state.id = null;
+    $("#pick-" + i).value = norm(e.target.value).toLowerCase(); apply();
+  }
+});
+$("#slots").addEventListener("change", () => renderList());
+$("#swap").onclick = () => { state.c = [state.c[1], state.c[0], state.c[2]]; renderSlots(); apply(); };
+$("#rotate").onclick = () => { state.c = [state.c[2], state.c[0], state.c[1]]; renderSlots(); apply(); };
+$("#mix").onclick = () => {
+  const pool = PALETTES.flatMap(p => p.c.map((x, i) => ({ x, i })));
+  const pick = role => { const r = pool.filter(p => p.i === role); return [...r[Math.floor(Math.random() * r.length)].x]; };
+  let c; let tries = 0;
+  do { c = [pick(0), pick(1), pick(2)]; tries++; } while (tries < 40 && (contrast(c[0][1], c[2][1]) < 2.5 || contrast(c[0][1], c[1][1]) < 1.6));
+  state = { name: "Random mix", id: null, c }; renderSlots(); apply(); renderList();
+};
+$("#save").onclick = () => {
+  const key = state.c.map(x => x[1]).join("");
+  if (saved.some(s => s.c.map(x => x[1]).join("") === key)) return toast("Already saved");
+  const base = PALETTES.find(p => p.id === state.id);
+  saved.push({ id: "s-" + Date.now(), group: "saved", name: base ? base.name : state.c.map(x => x[0] === "Custom" ? x[1] : x[0]).join(" / "), c: state.c.map(x => [...x]) });
+  store.set("pb-saved", saved); renderFilters(); renderList(); toast("Saved to your mixes");
+};
+$("#copy").onclick = () => {
+  const [b, s, a] = state.c;
+  const css = `:root {\n  --color-base: ${b[1]};      /* ${b[0]} · 60% */\n  --color-secondary: ${s[1]}; /* ${s[0]} · 30% */\n  --color-accent: ${a[1]};    /* ${a[0]} · 10% */\n  --text-on-base: ${ink(b[1])};\n  --text-on-secondary: ${ink(s[1])};\n  --text-on-accent: ${ink(a[1])};\n}`;
+  navigator.clipboard.writeText(css).then(() => toast("CSS variables copied"), () => toast("Copy blocked: " + state.c.map(x => x[1]).join(" ")));
+};
+const tabs = { web: [$("#tab-web"), $("#web")], app: [$("#tab-app"), $("#app")] };
+function showTab(k) {
+  for (const [key, [t, p]] of Object.entries(tabs)) { t.setAttribute("aria-selected", key === k); p.hidden = key !== k; }
+  store.set("pb-tab", k);
+}
+tabs.web[0].onclick = () => showTab("web");
+tabs.app[0].onclick = () => showTab("app");
+
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input")) return;
+  const v = visible();
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") {
+    if (!v.length) return;
+    e.preventDefault();
+    const i = v.findIndex(p => p.id === state.id);
+    const d = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
+    load(v[(i + d + v.length) % v.length]);
+  }
+  else if (e.key === "r") $("#rotate").click();
+  else if (e.key === "s") $("#swap").click();
+  else if (e.key === "m") $("#mix").click();
+});
+
+let tt;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), 1600); }
+
+// ---------- boot ----------
+renderFilters();
+const fromHash = location.hash.slice(1).split("-");
+if (fromHash.length === 3 && fromHash.every(validHex)) {
+  const hit = [...PALETTES, ...saved].find(p => p.c.map(x => x[1].slice(1)).join("-").toUpperCase() === location.hash.slice(1).toUpperCase());
+  hit ? load(hit) : (state = { name: "Shared mix", id: null, c: fromHash.map(h => ["Custom", norm(h)]) }, renderSlots(), apply(), renderList());
+} else load(PALETTES[0]);
+showTab(store.get("pb-tab", "web"));
+</script>
+
+</body>
+</html>
